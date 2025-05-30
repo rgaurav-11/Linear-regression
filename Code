@@ -1,0 +1,79 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# Load dataset
+df = pd.read_csv("Housing.csv")
+
+# Encode categorical features safely
+categoricals = {
+    'mainroad': {'yes': 1, 'no': 0},
+    'guestroom': {'yes': 1, 'no': 0},
+    'basement': {'yes': 1, 'no': 0},
+    'hotwaterheating': {'yes': 1, 'no': 0},
+    'airconditioning': {'yes': 1, 'no': 0},
+    'prefarea': {'yes': 1, 'no': 0},
+    'furnishingstatus': {'furnished': 2, 'semi-furnished': 1, 'unfurnished': 0}
+}
+df.replace(categoricals, inplace=True)
+
+# Drop rows with missing values if any
+df.dropna(inplace=True)
+
+# Define features and target
+X = df.drop('price', axis=1)
+y = df['price']
+
+# Split dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Train model
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+# Evaluate model
+print("MAE:", mean_absolute_error(y_test, y_pred))
+print("MSE:", mean_squared_error(y_test, y_pred))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred)))
+print("R² Score:", r2_score(y_test, y_pred))
+
+# === Visualization 1: Smoothed Line Plot ===
+# Sort X_test for a smooth line
+area_test = X_test['area']
+sorted_indices = np.argsort(area_test)
+area_sorted = area_test.iloc[sorted_indices].values
+y_test_sorted = y_test.iloc[sorted_indices].values
+y_pred_sorted = y_pred[sorted_indices]
+
+plt.figure(figsize=(10, 6))
+plt.plot(area_sorted, y_pred_sorted, color='red', label='Predicted (Regression Line)', linewidth=2)
+plt.scatter(area_test, y_test, color='blue', alpha=0.5, label='Actual Prices')
+plt.title('Housing Price Prediction by Area')
+plt.xlabel('Area (sq ft)')
+plt.ylabel('Price')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# === Visualization 2: Seaborn Regression Plot ===
+plt.figure(figsize=(10, 6))
+sns.regplot(
+    x=X_test['area'], 
+    y=y_test, 
+    scatter_kws={"alpha": 0.5}, 
+    line_kws={"color": "red"}
+)
+plt.title("Regression Fit: Price vs Area")
+plt.xlabel("Area (sq ft)")
+plt.ylabel("Price")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
